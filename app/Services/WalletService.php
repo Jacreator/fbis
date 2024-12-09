@@ -48,8 +48,8 @@ class WalletService extends BaseService
       'user_id' => $payload['user_id'],
       'wallet_id' => $walletId,
       'currency' => 'NGN',
-      'available_balance' => '0',
-      'ledger_balance' => '0',
+      'available_balance' => '1000',
+      'ledger_balance' => '1000',
       'locked_fund' => '0',
       'is_locked' => false,
     ]);

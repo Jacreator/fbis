@@ -64,6 +64,6 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'insufficient_wallet_balance' => \App\Http\Middleware\CheckWalletBalance::class
+        'insufficient_wallet_balance' => \App\Http\Middleware\CheckWalletBalance::class,
     ];
 }

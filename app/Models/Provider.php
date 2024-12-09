@@ -15,5 +15,6 @@ class Provider extends Model
     'code',
     'status',
     'image',
+    'config',
   ];
 }

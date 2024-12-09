@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->string('status');
             $table->string('image')->nullable();
+            $table->json('config')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

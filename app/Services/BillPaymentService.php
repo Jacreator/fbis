@@ -50,7 +50,7 @@ class BillPaymentService extends BaseService
         'wallet_id' => $data['wallet_id']
       ]);
       // make transaction record
-      $transaction = new Transaction();
+      $transaction = new Transaction(); // could also use TransactionRepository
       $transaction->wallet_id = $data['wallet_id'];
       $transaction->settlement_amount = $amount;
       $transaction->amount_paid = $data['amount'];

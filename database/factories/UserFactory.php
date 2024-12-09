@@ -28,7 +28,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'phone_number' => $this->faker->phoneNumber,
-            'type' => $this->faker->randomElement(UserType::cases()),
+            'type' => UserType::ADMIN,
         ];
     }
 
@@ -39,16 +39,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
-        ]);
-    }
-
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function agent(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'type' => UserType::AGENT->value,
         ]);
     }
 }

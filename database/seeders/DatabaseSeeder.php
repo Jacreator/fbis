@@ -15,18 +15,24 @@ class DatabaseSeeder extends Seeder
    */
   public function run(): void
   {
-    User::factory(10)->create();
+    User::factory(1)->create();
 
     Provider::create([
       'name' => 'MTN airtime',
       'code' => 'MTN',
-      'status' => true
+      'status' => true,
+      'config' => json_encode([
+        'mart_provider' => 'Shaggo'
+      ])
     ]);
 
     Provider::create([
       'name' => 'GLO airtime',
       'code' => 'GLO',
-      'status' => true
+      'status' => true,
+      'config' => json_encode([
+        'mart_provider' => 'bap'
+      ])
     ]);
   }
 }

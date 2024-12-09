@@ -40,5 +40,15 @@ Route::group(
       'bill-payments/vend',
       [AirtimePaymentController::class, 'vend']
     )->middleware('insufficient_wallet_balance');
+
+    Route::get(
+      'bill-payment/provider',
+      [AirtimePaymentController::class, 'airtimeProvider']
+    );
+
+    Route::put(
+      'bill-payments/change-vendor/{provider}',
+      [AirtimePaymentController::class, 'changeVendor']
+    ); // can be protected by admin middleware
   }
 );
