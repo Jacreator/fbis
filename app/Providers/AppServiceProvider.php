@@ -25,7 +25,6 @@ class AppServiceProvider extends ServiceProvider
     $this->app->singleton(
       AirtimeBillingServiceInterface::class,
       function ($app) {
-        // You can use configuration or other mechanisms to determine the service
 
         switch (config('app.airtime_billing_service')) {
           case 'biller_aggregation':

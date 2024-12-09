@@ -26,6 +26,7 @@ class VendRequest extends FormRequest
       'wallet_id' => 'required',
       'phone_number' => 'required',
       'network' => 'required',
+      'provider' => 'nullable',
     ];
   }
 }

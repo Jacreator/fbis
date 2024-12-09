@@ -9,6 +9,8 @@ use App\Enums\TransactionType;
 use Illuminate\Http\Response as HttpResponse;
 use App\Contract\AirtimeBillingServiceInterface;
 use App\Exceptions\Transaction\UnrecognizedTransactionException;
+use App\Helper\BillerAggregationService;
+use App\Helper\ShaggoPartnerApiService;
 
 class BillPaymentService extends BaseService
 {
@@ -37,9 +39,16 @@ class BillPaymentService extends BaseService
     return true;
   }
 
-  public function vend(array $data)
+  public function vend(array $data,)
   {
     try {
+      // switch provider base on provider code set in request
+      if ($data['provider'] == 'shaggo') {
+        $this->airtimeService = new ShaggoPartnerApiService();
+      }
+      if ($data['provider'] == 'bap') {
+        $this->airtimeService = new BillerAggregationService();
+      }
       // Todo verify user number
       // check company amount for sufficient fund
       $amount = $this->airtimeService->commission(['amount' => $data['amount']]);
@@ -75,7 +84,7 @@ class BillPaymentService extends BaseService
 
       if ($billedService['code'] == HttpResponse::HTTP_OK) {
         // success response
-        
+
         $transaction->status = 'success';
         $transaction->description = 'mart_payment_success';
         $transaction->payload = json_encode($billedService);
