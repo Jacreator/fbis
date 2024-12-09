@@ -107,7 +107,11 @@ class ShaggoPartnerApiService implements AirtimeBillingServiceInterface
   public function commission(array $data)
   {
     $amount = $data['amount'];
-    $commissionRate = 0.03; // 3%
+    $type = $data['type'];
+    $commissionRate = 0;
+    if ($type == 'airtime') {
+      $commissionRate = 0.03; // 3%
+    }
 
     $commissionAmount = $amount * $commissionRate;
     $finalAmount = $amount - $commissionAmount;

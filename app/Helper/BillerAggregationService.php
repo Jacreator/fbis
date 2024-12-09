@@ -71,7 +71,11 @@ class BillerAggregationService implements AirtimeBillingServiceInterface
   public function commission(array $data)
   {
     $amount = $data['amount'];
-    $commissionRate = 0.05; // 5%
+    $type = $data['type'];
+    $commissionRate = 0;
+    if ($type == 'airtime') {
+      $commissionRate = 0.05; // 5%
+    }
 
     $commissionAmount = $amount * $commissionRate;
     $finalAmount = $amount - $commissionAmount;

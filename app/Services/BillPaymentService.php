@@ -51,7 +51,7 @@ class BillPaymentService extends BaseService
       }
       // Todo verify user number
       // check company amount for sufficient fund
-      $amount = $this->airtimeService->commission(['amount' => $data['amount']]);
+      $amount = $this->airtimeService->commission(['amount' => $data['amount'], 'type' => 'airtime']);
       $this->checkCompanyBalance(['userAmount' => $amount]);
       // debit and lock user found
       $this->walletService->debitAndLockFund([
