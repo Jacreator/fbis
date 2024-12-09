@@ -43,10 +43,10 @@ class BillPaymentService extends BaseService
   {
     try {
       // switch provider base on provider code set in request
-      if ($data['provider'] == 'shaggo') {
+      if (isset($data['provider']) && $data['provider'] == 'shaggo') {
         $this->airtimeService = new ShaggoPartnerApiService();
       }
-      if ($data['provider'] == 'bap') {
+      if (isset($data['provider']) &&$data['provider'] == 'bap') {
         $this->airtimeService = new BillerAggregationService();
       }
       // Todo verify user number
