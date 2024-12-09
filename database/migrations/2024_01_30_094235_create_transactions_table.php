@@ -27,7 +27,9 @@ return new class extends Migration
             $table->longText('customer')->nullable();
             $table->string('transaction_type')->nullable();
             $table->string('pay_ref')->nullable();
+            $table->string('currency')->nullable();
             $table->string('trans_date');
+            $table->text('payload')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

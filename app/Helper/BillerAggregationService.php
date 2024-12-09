@@ -21,7 +21,7 @@ class BillerAggregationService implements AirtimeBillingServiceInterface
         "service_type" => strtolower($data['network']),
         "plan" => "prepaid",
         "agentId" => config('services.biller.agentId'),
-        "agentReference" => config('services.biller.agentReference')
+        "agentReference" => $data['trans_ref']
       ]);
 
     if (! $billed->successful()) {
@@ -30,11 +30,15 @@ class BillerAggregationService implements AirtimeBillingServiceInterface
         'message' => 'Third party not found. please contact our customer service!',
       ];
     }
-
+    $billedResponse = json_decode($billed, true);
+    $formattedResponse = json_encode([
+      "trans_id" => 'BXN|' . $billedResponse['data']['baxiReference'],
+      "trans_date" => now()
+    ]);
     return [
       'code' => HttpResponse::HTTP_OK,
       'message' => 'wallet information received',
-      'data' => json_decode($billed->body()),
+      'data' => json_decode($formattedResponse),
     ];
   }
 
@@ -53,11 +57,14 @@ class BillerAggregationService implements AirtimeBillingServiceInterface
         'message' => 'Third party not found. please contact our customer service!',
       ];
     }
-
+    $companyBalanceResponse = json_decode($companyBalance->body(), true);
+    $formattedResponse = json_encode([
+      "primaryBalance" => $companyBalanceResponse['data']['balance']
+    ]);
     return [
       'code' => HttpResponse::HTTP_OK,
       'message' => 'wallet information received',
-      'data' => json_decode($companyBalance->body()),
+      'data' => json_decode($formattedResponse),
     ];
   }
 

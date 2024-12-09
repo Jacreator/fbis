@@ -6,6 +6,7 @@ use App\Http\Controllers\API\V1\WalletController;
 use App\Http\Controllers\API\V1\BillPaymentController;
 use App\Http\Controllers\API\V1\TransactionController;
 use App\Http\Controllers\API\V1\WalletFundingController;
+use App\Http\Controllers\API\V1\AirtimePaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,7 +38,7 @@ Route::group(
 
     Route::post(
       'bill-payments/vend',
-      [BillPaymentController::class, 'vend']
+      [AirtimePaymentController::class, 'vend']
     )->middleware('insufficient_wallet_balance');
   }
 );

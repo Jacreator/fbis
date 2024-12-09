@@ -29,6 +29,8 @@ class Transaction extends Model implements Filterable
         'transaction_type',
         'pay_ref',
         'trans_date',
+        'currency',
+        'payload'
     ];
 
     protected $casts = [

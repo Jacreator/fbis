@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\API\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\BillPaymentRequest\VendRequest;
 use App\Http\Resources\BillPaymentResource;
 use App\Services\BillPaymentService;
@@ -23,7 +22,7 @@ class AirtimePaymentController extends Controller
         new BillPaymentResource($vend)
       );
     } catch (Throwable $e) {
-      return $this->errorResponse($e->getMessage(), $e->getCode());
+      return $this->error($e->getMessage());
     }
   }
 }

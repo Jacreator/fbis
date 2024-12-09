@@ -21,114 +21,112 @@ use Throwable;
 
 class WalletService extends BaseService
 {
-    public function __construct(
-        protected WalletRepository $walletRepository,
-        protected TransactionRepository $transactionRepository,
-        private MonnifyHelper $monnify
-    )
-    {
+  public function __construct(
+    protected WalletRepository $walletRepository,
+    protected TransactionRepository $transactionRepository,
+    private MonnifyHelper $monnify
+  ) {}
+
+  /**
+   * @throws Exception
+   */
+  public function createWallet($payload): Model
+  {
+    $userWalletExist = $this->walletRepository->findByWhere('user_id', $payload['user_id']);
+
+    if ($userWalletExist) {
+      throw new WalletAlreadyExistsException();
     }
 
-    /**
-     * @throws Exception
-     */
-    public function createWallet($payload): Model
-    {
-        $userWalletExist = $this->walletRepository->findByWhere('user_id', $payload['user_id']);
+    do {
+      $walletId = Str::random(10);
 
-        if ($userWalletExist) {
-            throw new WalletAlreadyExistsException();
-        }
+      $walletIdAlreadyExist = $this->walletRepository->findByWhere('wallet_id', $walletId);
+    } while ($walletIdAlreadyExist);
 
-        do {
-            $walletId = Str::random(10);
+    return $this->walletRepository->create([
+      'user_id' => $payload['user_id'],
+      'wallet_id' => $walletId,
+      'currency' => 'NGN',
+      'available_balance' => '0',
+      'ledger_balance' => '0',
+      'locked_fund' => '0',
+      'is_locked' => false,
+    ]);
+  }
 
-            $walletIdAlreadyExist = $this->walletRepository->findByWhere('wallet_id', $walletId);
+  /**
+   * @throws WalletNotFoundException
+   * @throws DuplicateTransactionException
+   * @throws InvalidTransactionAmountException
+   * @throws UnrecognizedTransactionException
+   * @throws Throwable
+   */
+  public function fund(array $payload): Model
+  {
+    try {
+      DB::beginTransaction();
 
-        } while ($walletIdAlreadyExist);
+      $wallet = $this->walletRepository->where('wallet_id', $payload['wallet_id'])->first();
 
-        return $this->walletRepository->create([
-            'user_id' => $payload['user_id'],
-            'wallet_id' => $walletId,
-            'currency' => 'NGN',
-            'available_balance' => '0',
-            'ledger_balance' => '0',
-            'locked_fund' => '0',
-            'is_locked' => false,
-        ]);
+      if (! $wallet) {
+        throw new WalletNotFoundException();
+      }
+
+      if ($this->transactionRepository->exists(['trans_ref' => $payload['transactionReference']])) {
+        throw new DuplicateTransactionException();
+      }
+
+      $monnifyResponse = $this->monnify->verifyTransaction($payload['transactionReference']);
+
+      if ($monnifyResponse['code'] == HttpResponse::HTTP_NOT_FOUND) {
+        throw new UnrecognizedTransactionException();
+      }
+
+      $monnifyResponseBody = $monnifyResponse['data']->responseBody;
+
+      if ($payload['amount'] != $monnifyResponseBody->amountPaid) {
+        throw new InvalidTransactionAmountException();
+      }
+
+      $previousBalance = $wallet->available_balance;
+
+      $wallet->available_balance += $monnifyResponseBody->amountPaid;
+      $wallet->ledger_balance += $monnifyResponseBody->amountPaid;
+      $wallet->save();
+      
+      $transaction = $this->transactionRepository->create([
+        'wallet_id' => $wallet->wallet_id,
+        'amount_paid' => $monnifyResponseBody->amountPaid,
+        'settlement_amount' => $monnifyResponseBody->settlementAmount,
+        'status' => $monnifyResponseBody->paymentStatus,
+        'description' => $monnifyResponseBody->paymentDescription,
+        'payment_method' => 'web-sdk',
+        'payment_type' => 'credit',
+        'current_balance' => $wallet->available_balance,
+        'previous_balance' => $previousBalance,
+        'receiver' => 'FBIS_wallet',
+        'customer' => json_encode($monnifyResponseBody->customer),
+        'transaction_type' => TransactionType::ACCOUNT_CREDIT,
+        'trans_ref' => $monnifyResponseBody->transactionReference,
+        'pay_ref' => $monnifyResponseBody->paymentReference,
+        'trans_date' => now(),
+        'currency' => 'NGN',
+        'payload' => json_encode($monnifyResponseBody)
+      ]);
+
+      DB::commit();
+
+      return $transaction;
+    } catch (Throwable $e) {
+      DB::rollBack();
+
+      throw $e;
     }
+  }
 
-    /**
-     * @throws WalletNotFoundException
-     * @throws DuplicateTransactionException
-     * @throws InvalidTransactionAmountException
-     * @throws UnrecognizedTransactionException
-     * @throws Throwable
-     */
-    public function fund(array $payload): Model
-    {
-        try {
-            DB::beginTransaction();
-
-            $wallet = $this->walletRepository->where('wallet_id', $payload['wallet_id'])->first();
-
-            if (! $wallet) {
-                throw new WalletNotFoundException();
-            }
-
-            if ($this->transactionRepository->exists(['trans_ref' => $payload['transactionReference']])) {
-                throw new DuplicateTransactionException();
-            }
-
-            $monnifyResponse = $this->monnify->verifyTransaction($payload['transactionReference']);
-
-            if ($monnifyResponse['code'] == HttpResponse::HTTP_NOT_FOUND) {
-                throw new UnrecognizedTransactionException();
-            }
-
-            $monnifyResponseBody = $monnifyResponse['data']->responseBody;
-
-            if ($payload['amount'] != $monnifyResponseBody->amountPaid) {
-                throw new InvalidTransactionAmountException();
-            }
-
-            $previousBalance = $wallet->available_balance;
-
-            $wallet->available_balance += $monnifyResponseBody->amountPaid;
-            $wallet->ledger_balance += $monnifyResponseBody->amountPaid;
-            $wallet->save();
-
-            $transaction = $this->transactionRepository->create([
-                'wallet_id' => $wallet->wallet_id,
-                'amount_paid' => $monnifyResponseBody->amountPaid,
-                'settlement_amount' => $monnifyResponseBody->settlementAmount,
-                'status' => $monnifyResponseBody->paymentStatus,
-                'description' => $monnifyResponseBody->paymentDescription,
-                'payment_method' => 'web-sdk',
-                'payment_type' => 'credit',
-                'current_balance' => $wallet->available_balance,
-                'previous_balance' => $previousBalance,
-                'receiver' => 'FBIS_wallet',
-                'customer' => json_encode($monnifyResponseBody->customer),
-                'transaction_type' => TransactionType::ACCOUNT_CREDIT,
-                'trans_ref' => $monnifyResponseBody->transactionReference,
-                'pay_ref' => $monnifyResponseBody->paymentReference,
-                'trans_date' => now(),
-            ]);
-
-            DB::commit();
-
-            return $transaction;
-
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            throw $e;
-        }
-    }
-
-    public function debitAndLockFund(array $payload): Model
-    {
+  public function debitAndLockFund(array $payload): Model
+  {
     try {
       DB::beginTransaction();
 
@@ -137,23 +135,22 @@ class WalletService extends BaseService
       if (!$wallet) {
         throw new WalletNotFoundException();
       }
-
+      
       $wallet->available_balance -= $payload['amountPaid'];
-      $wallet->ledger_balance += $payload['amountPaid'];
+      $wallet->locked_fund += $payload['amountPaid'];
       $wallet->save();
 
       DB::commit();
-
       return $wallet;
     } catch (Throwable $e) {
       DB::rollBack();
 
       throw $e;
     }
-    }
+  }
 
-    public function refundAndUnlockFund(array $payload): Model
-    {
+  public function refundAndUnlockFund(array $payload): Model
+  {
     try {
       DB::beginTransaction();
 
@@ -164,9 +161,9 @@ class WalletService extends BaseService
       }
 
       $wallet->available_balance += $payload['amountPaid'];
-      $wallet->ledger_balance -= $payload['amountPaid'];
+      $wallet->locked_fund -= $payload['amountPaid'];
       $wallet->save();
-
+      
       DB::commit();
 
       return $wallet;
@@ -175,10 +172,10 @@ class WalletService extends BaseService
 
       throw $e;
     }
-    }
+  }
 
-    public function clearLedgerBalance(array $payload): Model
-    {
+  public function clearLedgerAndLockBalance(array $payload): Model
+  {
     try {
       DB::beginTransaction();
 
@@ -186,9 +183,10 @@ class WalletService extends BaseService
 
       if (!$wallet) {
         throw new WalletNotFoundException();
-      } 
+      }
 
       $wallet->ledger_balance -= $payload['amountPaid'];
+      $wallet->locked_fund -= $payload['amountPaid'];
       $wallet->save();
 
       DB::commit();
@@ -199,5 +197,5 @@ class WalletService extends BaseService
 
       throw $e;
     }
-    }
+  }
 }
